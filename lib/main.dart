@@ -15,7 +15,7 @@ class MyApp extends StatelessWidget {
       title: 'Flutter Demo',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-       colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+       colorScheme: .fromSeed(seedColor: Colors.blueGrey),
       ),
       home: const LoginScreen(),
     );
