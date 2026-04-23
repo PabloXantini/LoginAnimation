@@ -1,3 +1,5 @@
+import 'dart:async'; //3.1 Import Timer
+
 import 'package:flutter/material.dart';
 import 'package:rive/rive.dart';
 
@@ -17,10 +19,41 @@ class _LoginScreenState extends State<LoginScreen> {
   //State Machine Input
   SMIBool? _isChecking;
   SMIBool? _isHandsUp;
-  SMINumber? _numLook;
+  SMINumber? _numLook; //2.2 variable for tracking the bear look 
   SMITrigger? _trigSuccess;
   SMITrigger? _trigFail;
-
+  //1.1 Create variables for FocusNode
+  final _emailFocusNode = FocusNode();
+  final _passwordFocusNode = FocusNode();
+  //3.2 Timer for stop the look when stop writing
+  Timer? _typingDebounce;
+  //1.2 Add listener
+  @override
+  void initState() {
+    super.initState();
+    _emailFocusNode.addListener((){
+      if(_emailFocusNode.hasFocus){
+        //Check is not null
+        if(_isHandsUp != null){
+          //Hands down in email
+          _isHandsUp?.change(false);
+          //2.2 Neutral look
+          _numLook?.value = 50.0;
+        }
+      }
+    });
+    _passwordFocusNode.addListener((){
+      //Hands up when is in password
+      _isHandsUp?.change(_passwordFocusNode.hasFocus);
+    });
+  }
+  //1.4 Release memory when exit on the screen
+  @override
+  void dispose() {
+    super.dispose();
+    _emailFocusNode.dispose();
+    _passwordFocusNode.dispose();
+  }
   @override
   Widget build(BuildContext context) {
     //Screen size
@@ -51,20 +84,34 @@ class _LoginScreenState extends State<LoginScreen> {
                     artboard.addController(_controller!);
                     _isChecking = _controller!.findSMI('isChecking') as SMIBool;
                     _isHandsUp = _controller!.findSMI('isHandsUp') as SMIBool;
-                    _numLook = _controller!.findSMI('numLook') as SMINumber;
+                    _numLook = _controller!.findSMI('numLook') as SMINumber; //1.3 bind numLook
                     _trigSuccess = _controller!.findSMI('trigSuccess') as SMITrigger;
                     _trigFail = _controller!.findSMI('trigFail') as SMITrigger;
                   },
                 ),
               ),
+              //Email
               const SizedBox(height: 10),
               TextField(
+                //bind focus to textfield
+                focusNode: _emailFocusNode,
                 onChanged: (value){
                   if(_isHandsUp!=null){
                     _isHandsUp!.change(false);
                   }
                   if(_isChecking == null) return;
                   _isChecking!.change(true);
+                  // 2.4 Implement logic
+                  // Adjust from 0 to 100
+                  final double look = (value.length / 80.0 * 100.0).clamp(0, 100);
+                  _numLook?.value = look;
+                  // 3.3 Implment debounce (timer)
+                  // Cancel any timer existent
+                  _typingDebounce?.cancel();
+                  _typingDebounce = Timer(const Duration(seconds: 3), (){
+                    //if closes the screen
+                    if(!mounted) return;
+                  });
                 },
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
@@ -77,12 +124,13 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 10),
               TextField(
+                focusNode: _passwordFocusNode,
                 onChanged: (value){
                   if(_isChecking!=null){
-                    _isChecking!.change(false);
+                    //_isChecking!.change(false);
                   }
                   if(_isHandsUp == null) return;
-                  _isHandsUp!.change(true);
+                  //_isHandsUp!.change(true);
                 },
                 obscureText: _obscureText,
                 decoration: InputDecoration(
@@ -103,7 +151,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 10)
+              const SizedBox(height: 10),
+              SizedBox()
             ],
           ),
         ),
